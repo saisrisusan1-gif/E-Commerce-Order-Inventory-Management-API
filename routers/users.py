@@ -18,3 +18,19 @@ def get_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"id": user.id, "email": user.email}
+
+
+@router.get("/")
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    users = db.query(User).all()
+
+    if not users:
+        raise HTTPException(status_code=404, detail="No users found")
+
+    return [
+        {"id": user.id, "email": user.email}
+        for user in users
+    ]

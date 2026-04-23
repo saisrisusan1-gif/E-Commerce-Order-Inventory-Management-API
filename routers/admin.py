@@ -15,15 +15,18 @@ def admin_dashboard(user: User = Depends(require_role(RoleEnum.admin))):
 def make_admin(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(RoleEnum.admin))  # 🔥 enforce admin
+    current_user: User = Depends(get_current_user)
 ):
+    total_admins = db.query(User).filter(User.role == RoleEnum.admin).count()
+
+    # ✅ If admins exist → only admin can promote
+    if total_admins > 0 and current_user.role != RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Only admin can promote users")
+
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    if user.role == RoleEnum.admin:
-        return {"msg": "User is already admin"}
 
     user.role = RoleEnum.admin
     db.commit()
